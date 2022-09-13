@@ -44,27 +44,29 @@ typedef void **(*buf_inc_ptr_t)(void **buf);
 typedef uint16_t (*buf_get_data_len_t)(void *buf);
 typedef uint64_t (*buf_get_data_t)(void *buf);
 typedef uint64_t (*buf_get_addr_t)(void *buf);
+typedef void (*buf_get_xdp_hints_t)(void *buf);
 typedef uint16_t (*buf_rx_burst_t)(void *arg, void **bufs, uint16_t nb_pkts);
 typedef uint16_t (*buf_tx_burst_t)(void *arg, void **bufs, uint16_t nb_pkts);
 
 typedef struct lport_buf_mgmt {
-    buf_alloc_t buf_alloc;               /**< Allocate buffer routine */
-    buf_free_t buf_free;                 /**< Free buffer routine */
-    buf_set_len_t buf_set_len;           /**< Set buffer length routine */
-    buf_set_data_len_t buf_set_data_len; /**< Set buffer data length routine */
-    buf_set_data_t buf_set_data;         /**< Set buffer data pointer routine */
-    buf_reset_t buf_reset;               /**< Buffer reset function */
-    buf_get_data_len_t buf_get_data_len; /**< Get buffer data length routine */
-    buf_get_data_t buf_get_data;         /**< Get buffer data pointer routine */
-    buf_get_addr_t buf_get_addr;         /**< Get buffer base address routine */
-    buf_inc_ptr_t buf_inc_ptr;           /**< Increment the buffer pointer */
-    uint32_t frame_size;                 /**< Frame size in umem */
-    size_t buf_headroom;                 /**< Buffer headroom size */
-    size_t pool_header_sz;               /**< Pool header size for external buffer pool*/
-    void *buf_arg;                       /**< Argument for the buffer mgmt routines */
-    buf_rx_burst_t buf_rx_burst;         /**< RX burst callback */
-    buf_tx_burst_t buf_tx_burst;         /**< TX burst callback */
-    bool unaligned_buff;                 /**< Unaligned buffer support */
+    buf_alloc_t buf_alloc;                     /**< Allocate buffer routine */
+    buf_free_t buf_free;                       /**< Free buffer routine */
+    buf_set_len_t buf_set_len;                 /**< Set buffer length routine */
+    buf_set_data_len_t buf_set_data_len;       /**< Set buffer data length routine */
+    buf_set_data_t buf_set_data;               /**< Set buffer data pointer routine */
+    buf_reset_t buf_reset;                     /**< Buffer reset function */
+    buf_get_data_len_t buf_get_data_len;       /**< Get buffer data length routine */
+    buf_get_data_t buf_get_data;               /**< Get buffer data pointer routine */
+    buf_get_addr_t buf_get_addr;               /**< Get buffer base address routine */
+    buf_get_xdp_hints_t buf_process_xdp_hints; /**< Get buffer xdp-hints routine */
+    buf_inc_ptr_t buf_inc_ptr;                 /**< Increment the buffer pointer */
+    uint32_t frame_size;                       /**< Frame size in umem */
+    size_t buf_headroom;                       /**< Buffer headroom size */
+    size_t pool_header_sz;                     /**< Pool header size for external buffer pool*/
+    void *buf_arg;                             /**< Argument for the buffer mgmt routines */
+    buf_rx_burst_t buf_rx_burst;               /**< RX burst callback */
+    buf_tx_burst_t buf_tx_burst;               /**< TX burst callback */
+    bool unaligned_buff;                       /**< Unaligned buffer support */
 } lport_buf_mgmt_t;
 
 typedef struct lport_cfg {

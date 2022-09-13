@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2019-2022 Intel Corporation
 
-sources = files('xskdev.c')
-headers = files('xskdev.h')
+sources = files('xskdev.c', 'xsk_hints.c')
+headers = files('xskdev.h', 'xsk_hints.h')
 
 deps += [cne, uds, mmap, mempool, pktmbuf, bpf_dep]
 

@@ -26,6 +26,7 @@
 #include <cne_mutex_helper.h>
 
 #include "xskdev.h"
+#include "xsk_hints.h"
 #include "cne_lport.h"        // for lport_stats_t, lport_cfg, lport_cfg_t
 
 #define FQ_ADD_BURST_COUNT 64
@@ -257,6 +258,50 @@ __get_mbuf_rx_unaligned(void *_xi, void *umem_addr, const struct xdp_desc *d, vo
     return d->len;
 }
 
+#if 0
+
+#define LINE_LEN 128
+
+static void
+cne_hexdump(FILE *f, const char *title, const void *buf, unsigned int len)
+{
+    unsigned int i, out, ofs;
+    const unsigned char *data = buf;
+    char line[LINE_LEN]; /* Space needed 8+16*3+3+16 == 75 */
+
+    if (f == NULL)
+        f = stdout;
+
+    cne_fprintf(f, "%s at [%p], len=%u\n", title ? "" : "  Dump data", data, len);
+    ofs = 0;
+    while (ofs < len) {
+        /* Format the line in the buffer */
+        out = snprintf(line, LINE_LEN, "%08X:", ofs);
+        for (i = 0; i < 16; i++) {
+            if (ofs + i < len)
+                snprintf(line + out, LINE_LEN - out, " %02X", (data[ofs + i] & 0xff));
+            else
+                strcpy(line + out, "   ");
+            out += 3;
+        }
+
+        for (; i <= 16; i++)
+            out += snprintf(line + out, LINE_LEN - out, " | ");
+
+        for (i = 0; ofs < len && i < 16; i++, ofs++) {
+            unsigned char c = data[ofs];
+
+            if (c < ' ' || c > '~')
+                c = '.';
+            out += snprintf(line + out, LINE_LEN - out, "%c", c);
+        }
+        cne_fprintf(f, "%s\n", line);
+    }
+
+    fflush(f);
+}
+
+#endif
 static __cne_always_inline uint16_t
 __get_mbuf_rx_aligned(void *_xi, void *umem_addr, const struct xdp_desc *d, void **bufs)
 {
@@ -273,6 +318,9 @@ __get_mbuf_rx_aligned(void *_xi, void *umem_addr, const struct xdp_desc *d, void
 
     xskdev_buf_set_data_len(xi, *bufs, d->len);
     xskdev_buf_set_data(xi, *bufs, offset - xi->buf_mgmt.buf_headroom);
+
+    if (xsk_desc_has_hints(d) || xsk_desc_has_hints_common(d))
+        xskdev_buf_process_xdp_hints(xi, *bufs);
 
     return d->len;
 }
@@ -751,6 +799,21 @@ xskdev_buf_inc_ptr_default(void **mb)
     return (void **)++p;
 }
 
+static __cne_always_inline void
+xskdev_buf_process_xdp_hints_default(void *mb)
+{
+    pktmbuf_t *p                = (pktmbuf_t *)mb;
+    uint64_t btf_id             = 0;
+    struct xsk_xdp_hints *hints = NULL;
+
+    btf_id = *pktmbuf_mtod_offset(p, uint64_t *, -(sizeof(uint64_t)));
+
+    hints = find_xdp_hints_struct_by_id(btf_id);
+
+    if (hints)
+        hints->process_hints(mb);
+}
+
 static void
 xskdev_buf_set_buf_mgmt_ops(lport_buf_mgmt_t *dst, lport_buf_mgmt_t *src)
 {
@@ -833,20 +896,21 @@ xskdev_socket_create(struct lport_cfg *c)
 
         xskdev_buf_set_buf_mgmt_ops(&xi->buf_mgmt, &c->buf_mgmt);
     } else {
-        xi->buf_mgmt.buf_arg = xi->pi = c->pi; /*Buffer pool*/
-        xi->buf_mgmt.buf_alloc        = xskdev_buf_alloc_default;
-        xi->buf_mgmt.buf_free         = xskdev_buf_free_default;
-        xi->buf_mgmt.buf_set_len      = xskdev_buf_set_len_default;
-        xi->buf_mgmt.buf_set_data_len = xskdev_buf_set_data_len_default;
-        xi->buf_mgmt.buf_set_data     = xskdev_buf_set_data_default;
-        xi->buf_mgmt.buf_get_data_len = xskdev_buf_get_data_len_default;
-        xi->buf_mgmt.buf_get_data     = xskdev_buf_get_data_default;
-        xi->buf_mgmt.buf_inc_ptr      = xskdev_buf_inc_ptr_default;
-        xi->buf_mgmt.buf_headroom     = sizeof(pktmbuf_t);
-        xi->buf_mgmt.buf_get_addr     = xskdev_buf_get_addr_default;
-        xi->buf_mgmt.buf_reset        = xskdev_buf_reset_default;
-        xi->buf_mgmt.frame_size       = c->bufsz;
-        xi->buf_mgmt.pool_header_sz   = 0;
+        xi->buf_mgmt.buf_arg = xi->pi      = c->pi; /*Buffer pool*/
+        xi->buf_mgmt.buf_alloc             = xskdev_buf_alloc_default;
+        xi->buf_mgmt.buf_free              = xskdev_buf_free_default;
+        xi->buf_mgmt.buf_set_len           = xskdev_buf_set_len_default;
+        xi->buf_mgmt.buf_set_data_len      = xskdev_buf_set_data_len_default;
+        xi->buf_mgmt.buf_set_data          = xskdev_buf_set_data_default;
+        xi->buf_mgmt.buf_get_data_len      = xskdev_buf_get_data_len_default;
+        xi->buf_mgmt.buf_get_data          = xskdev_buf_get_data_default;
+        xi->buf_mgmt.buf_inc_ptr           = xskdev_buf_inc_ptr_default;
+        xi->buf_mgmt.buf_headroom          = sizeof(pktmbuf_t);
+        xi->buf_mgmt.buf_get_addr          = xskdev_buf_get_addr_default;
+        xi->buf_mgmt.buf_process_xdp_hints = xskdev_buf_process_xdp_hints_default;
+        xi->buf_mgmt.buf_reset             = xskdev_buf_reset_default;
+        xi->buf_mgmt.frame_size            = c->bufsz;
+        xi->buf_mgmt.pool_header_sz        = 0;
     }
 
     if (!c->buf_mgmt.buf_rx_burst || !c->buf_mgmt.buf_tx_burst) {

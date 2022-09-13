@@ -446,6 +446,22 @@ xskdev_get_fd(xskdev_info_t *xi, int *rx_fd, int *tx_fd)
     return 0;
 }
 
+/**
+ * Get the XDP HINTs BTF ID
+ *
+ * @param xi
+ *    The pointer to the xskdev_info struct.
+ * @param buf
+ *    The buffer to set the data pointer of.
+ * @param off
+ *    The offset to set the data pointer to.
+ */
+CNDP_API __cne_always_inline void
+xskdev_buf_process_xdp_hints(xskdev_info_t *xi, void *buf)
+{
+    xi->buf_mgmt.buf_process_xdp_hints(buf);
+}
+
 #ifdef __cplusplus
 }
 #endif
