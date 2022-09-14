@@ -26,7 +26,9 @@
 #include <stdlib.h>                // for atoi
 #include <string.h>                // for strcmp, strerror
 #include <cne_graph.h>             // for
-
+#if USE_LIBXDP
+#include <xdp/libxdp.h>
+#endif
 #include <cli.h>        // for c_cmd, cli_add_tree, cli_usage, c_alias
 
 #include "cne_common.h"        // for __cne_unused, CNE_PKTMBUF_HEADROOM
@@ -636,18 +638,20 @@ cmd_ip_cksum(int argc __cne_unused, char **argv __cne_unused)
     ip.src_addr        = 0xc0120001;
     ip.dst_addr        = 0xc0120004;
 
-    cksum           = cne_ipv4_cksum(&ip);
+    cksum           = cne_ipv4_cksum(&ip, CHECKSUM_NONE);
     ip.hdr_checksum = cksum;
     cne_printf("[magenta]Checksum[]   : [orange]%04x[] calculated value\n", cksum);
     cne_printf("[magenta]Re-Checksum[]: [orange]%04x[] with validate checksum should be zero\n",
-               cne_ipv4_cksum(&ip));
+               cne_ipv4_cksum(&ip, CHECKSUM_NONE));
     ip.hdr_checksum = cksum + 1;
-    cne_printf("[magenta]Re-Checksum[]: [orange]%04x[] increment checksum\n", cne_ipv4_cksum(&ip));
+    cne_printf("[magenta]Re-Checksum[]: [orange]%04x[] increment checksum\n",
+               cne_ipv4_cksum(&ip, CHECKSUM_NONE));
     ip.hdr_checksum = cksum - 1;
-    cne_printf("[magenta]Re-Checksum[]: [orange]%04x[] decrement checksum\n", cne_ipv4_cksum(&ip));
+    cne_printf("[magenta]Re-Checksum[]: [orange]%04x[] decrement checksum\n",
+               cne_ipv4_cksum(&ip, CHECKSUM_NONE));
     ip.hdr_checksum = 0xFFFF;
     cne_printf("[magenta]Re-Checksum[]: [orange]%04x[] checksum set to 0xFFFF\n",
-               cne_ipv4_cksum(&ip));
+               cne_ipv4_cksum(&ip, CHECKSUM_NONE));
 
     return 0;
 }

@@ -23,6 +23,10 @@
 #include <cne_byteorder.h>
 #include <pktmbuf.h>
 
+#if USE_LIBXDP
+#include <xdp/libxdp.h>
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -173,6 +177,7 @@ __cne_raw_cksum_reduce(uint32_t sum)
 {
     sum = ((sum & 0xffff0000) >> 16) + (sum & 0xffff);
     sum = ((sum & 0xffff0000) >> 16) + (sum & 0xffff);
+
     return (uint16_t)sum;
 }
 
@@ -224,10 +229,15 @@ cne_raw_cksum_mbuf(const pktmbuf_t *m, uint32_t off, uint32_t len)
  *   The complemented checksum to set in the IP packet.
  */
 static inline uint16_t
-cne_ipv4_cksum(const struct cne_ipv4_hdr *ipv4_hdr)
+cne_ipv4_cksum(const struct cne_ipv4_hdr *ipv4_hdr, uint8_t ip_summed)
 {
     uint16_t cksum;
+
+    if (ip_summed == CHECKSUM_UNNECESSARY)
+        return 0;
+
     cksum = cne_raw_cksum(ipv4_hdr, cne_ipv4_hdr_len(ipv4_hdr));
+
     return (uint16_t)~cksum;
 }
 

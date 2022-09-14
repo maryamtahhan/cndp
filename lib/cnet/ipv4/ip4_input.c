@@ -124,19 +124,19 @@ ip4_input_node_process(struct cne_graph *graph, struct cne_node *node, void **ob
          * detect the invalid size/packet which will be dropped as 'dip[n]' is zero.
          */
         if (likely(pktmbuf_data_len(mbuf0) < pktmbuf_buf_len(mbuf0)) &&
-            likely(cne_ipv4_cksum(ip4[0]) == 0))
+            likely(cne_ipv4_cksum(ip4[0], pktmbuf_ip_summed(mbuf0)) == 0))
             dip[0] = be32toh(ip4[0]->dst_addr);
 
         if (likely(pktmbuf_data_len(mbuf1) < pktmbuf_buf_len(mbuf1)) &&
-            likely(cne_ipv4_cksum(ip4[1]) == 0))
+            likely(cne_ipv4_cksum(ip4[1], pktmbuf_ip_summed(mbuf1)) == 0))
             dip[1] = be32toh(ip4[1]->dst_addr);
 
         if (likely(pktmbuf_data_len(mbuf2) < pktmbuf_buf_len(mbuf2)) &&
-            likely(cne_ipv4_cksum(ip4[2]) == 0))
+            likely(cne_ipv4_cksum(ip4[2], pktmbuf_ip_summed(mbuf2)) == 0))
             dip[2] = be32toh(ip4[2]->dst_addr);
 
         if (likely(pktmbuf_data_len(mbuf3) < pktmbuf_buf_len(mbuf3)) &&
-            likely(cne_ipv4_cksum(ip4[3]) == 0))
+            likely(cne_ipv4_cksum(ip4[3], pktmbuf_ip_summed(mbuf3)) == 0))
             dip[3] = be32toh(ip4[3]->dst_addr);
 
         ipv4_save_metadata(mbuf0, ip4[0]);
@@ -222,7 +222,7 @@ ip4_input_node_process(struct cne_graph *graph, struct cne_node *node, void **ob
          * detect the invalid size/packet which will be dropped as 'dip[n]' is zero.
          */
         if (likely(pktmbuf_data_len(mbuf0) < pktmbuf_buf_len(mbuf0)) &&
-            likely(cne_ipv4_cksum(ip4[0]) == 0))
+            likely(cne_ipv4_cksum(ip4[0], pktmbuf_ip_summed(mbuf0)) == 0))
             dip[0] = be32toh(ip4[0]->dst_addr);
 
         ipv4_save_metadata(mbuf0, ip4[0]);

@@ -85,6 +85,17 @@ process_xdp_hints_ixgbe(void *buf)
 
     p->hash        = hints->common.rx_hash32;
     p->packet_type = hints->rss_type;
+
+    uint32_t csum_type  = hints->common.xdp_hints_flags & HINT_FLAG_CSUM_TYPE_MASK;
+    uint32_t csum_level = hints->common.xdp_hints_flags & HINT_FLAG_CSUM_LEVEL_MASK;
+
+    if (csum_type == CHECKSUM_UNNECESSARY)
+        p->ip_summed = CHECKSUM_UNNECESSARY;
+
+    if (csum_level)
+        p->csum_level = csum_level >> HINT_FLAG_CSUM_LEVEL_SHIFT;
+
+    // TODO PTYPE MAPPING?
 }
 
 struct xsk_xdp_hints xdp_hints_ixgbe = {

@@ -29,7 +29,9 @@
 #include <cnet_meta.h>
 #include "../chnl/chnl_priv.h"
 #include <cnet_chnl.h>
-
+#if USE_LIBXDP
+#include <xdp/libxdp.h>
+#endif
 #include <cnet_node_names.h>
 #include "ip4_node_api.h"                 // for CNE_NODE_IP4_OUTPUT_NEXT_PKT_DROP
 #include "ip4_output_priv.h"              // for CNE_NODE_IP4_OUTPUT_NEXT_PKT_DROP
@@ -96,8 +98,7 @@ ip4_output_header(struct cne_node *node __cne_unused, pktmbuf_t *m, uint16_t nxt
         eth->ether_type = htobe16(CNE_ETHER_TYPE_IPV4);
         ip->packet_id   = htobe16(nif->ip_ident);
         nif->ip_ident += ip->total_length;
-
-        ip->hdr_checksum = cne_ipv4_cksum(ip);
+        ip->hdr_checksum = cne_ipv4_cksum(ip, CHECKSUM_NONE);
 
         /* Do the UDP/TCP checksum if enabled */
         if (pcb->ip_proto == IPPROTO_UDP) {

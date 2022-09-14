@@ -42,6 +42,10 @@
 #include <cne_mmap.h>                     // for mmap_type_t
 #include <cne_prefetch.h>                 // for cne_prefetch0
 #include <mempool.h>                      // for mempool_t, mempool_get, mempool_g...
+#include <linux/types.h>
+#if USE_LIBXDP
+#include <xdp/libxdp.h>
+#endif
 
 #include "pktmbuf_ops.h"        // for mbuf_ops_t
 #include "pktmbuf_offload.h"
@@ -108,7 +112,18 @@ struct pktmbuf_s {
     uint16_t lport;      /**< RX lport number */
     uint16_t buf_len;    /**< Length of segment buffer - sizeof(pktmbuf_t) */
     uint16_t data_len;   /**< Amount of data in segment buffer */
-
+    CNE_STD_C11
+    struct {
+        uint8_t ip_summed : 2;
+        uint8_t csum_level : 2;
+    };
+    // union {
+    // 	__wsum		csum;
+    // 	struct {
+    // 		uint16_t	csum_start;
+    // 		uint16_t	csum_offset;
+    // 	};
+    // };
     /*
      * The packet type, which is the combination of outer/inner L2, L3, L4
      * and tunnel types. The packet_type is about data really present in the
@@ -424,6 +439,13 @@ CNDP_API int pktmbuf_iterate(pktmbuf_info_t *pi, pktmbuf_cb_t cb, void *ud);
 #define pktmbuf_meta_index(m) ((m)->meta_index)
 
 /**
+ * A macro that returns the ip_summed value
+ *
+ * @param m
+ *   The packet mbuf.
+ */
+#define pktmbuf_ip_summed(m) ((m)->ip_summed)
+/**
  * Prefetch the first part of the mbuf
  *
  * The first 64 bytes of the mbuf corresponds to fields that are used early
@@ -651,6 +673,11 @@ pktmbuf_reset(pktmbuf_t *m)
     m->tx_offload       = 0;
     m->ol_flags         = 0;
     m->hash             = 0;
+    m->hash             = 0;
+    m->ip_summed        = CHECKSUM_NONE;
+    m->csum_level       = 0;
+    m->hash             = 0;
+    m->packet_type      = 0;
 }
 
 /**

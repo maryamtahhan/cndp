@@ -47,5 +47,5 @@ txgen_ipv4_ctor(pkt_seq_t *pkt, void *hdr)
     ip->src_addr        = htonl(pkt->ip_src_addr.s_addr);
     ip->dst_addr        = htonl(pkt->ip_dst_addr.s_addr);
     ip->hdr_checksum    = 0;
-    ip->hdr_checksum    = cne_ipv4_cksum((const struct cne_ipv4_hdr *)ip);
+    ip->hdr_checksum    = cne_ipv4_cksum((const struct cne_ipv4_hdr *)ip, CHECKSUM_NONE);
 }

@@ -21,6 +21,10 @@
 #include <cne_log.h>
 #include <pktmbuf.h>
 
+#if USE_LIBXDP
+#include <xdp/libxdp.h>
+#endif
+
 /**
  * @file
  *
@@ -66,21 +70,6 @@ struct xsk_xdp_hints *find_xdp_hints_struct_by_id(const uint64_t btf_id);
  *        TEMPORARY STRUCT DECLARATIONS              *
  *                                                   *
  *****************************************************/
-struct xdp_hints_common {
-    union {
-        __wsum csum;
-        struct {
-            uint16_t csum_start;
-            uint16_t csum_offset;
-        };
-    };
-    uint16_t rx_queue;
-    uint16_t vlan_tci;
-    uint32_t rx_hash32;
-    uint32_t xdp_hints_flags;
-    uint64_t btf_full_id; /* BTF object + type ID */
-} __attribute__((aligned(4))) __attribute__((packed));
-
 struct xdp_hints {
     uint16_t rss_type;
     struct xdp_hints_common common;
