@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: BSD-3-Clause
  * Copyright (c) 2019-2022 Intel Corporation
+ * Copyright (c) 2022 Red Hat, Inc.
  */
 
 #ifndef _XSK_HINTS_H_
@@ -39,17 +40,17 @@ typedef void (*process_hints_t)(void *buf);
  */
 struct xsk_xdp_hints {
     TAILQ_ENTRY(xsk_xdp_hints) next; /**< Next in list */
-    const char *module;
-    const char *symbol_name;
-    uint64_t btf_id;
-    process_hints_t process_hints;
+    const char *module;              /**< Module name */
+    const char *symbol_name;         /**< Symbol name */
+    uint64_t btf_id;                 /**< BTF ID looked up at reg time */
+    process_hints_t process_hints;   /**< Callback function to process this type of hint */
 };
 
 /**
- * Register a virtual device driver.
+ * Register an xdp hints structure.
  *
- * @param driver
- *   A pointer to a pktdev_driver structure describing the driver
+ * @param hints
+ *   A pointer to a xsk_xdp_hints structure describing the hints
  *   to be registered.
  */
 void xdp_hints_register(struct xsk_xdp_hints *hints);
@@ -59,6 +60,7 @@ void xdp_hints_register(struct xsk_xdp_hints *hints);
 
 struct xsk_xdp_hints *find_xdp_hints_struct_by_name(const char *name);
 struct xsk_xdp_hints *find_xdp_hints_struct_by_id(const uint64_t btf_id);
+
 /*****************************************************
  *                                                   *
  *        TEMPORARY STRUCT DECLARATIONS              *

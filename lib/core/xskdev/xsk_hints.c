@@ -1,10 +1,11 @@
 /* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2022 Red Hat
+ * Copyright (c) 2019-2022 Intel Corporation
+ * Copyright (c) 2022 Red Hat, Inc.
  */
 
 #include "xsk_hints.h"
 
-/** Double linked list of device drivers xdp hints structures. */
+/** Double linked list of xdp hints structures. */
 TAILQ_HEAD(xsk_xdp_hints_list, xsk_xdp_hints) xdp_hints_structs_list;
 
 struct xsk_xdp_hints *
@@ -25,7 +26,7 @@ find_xdp_hints_struct_by_id(const uint64_t btf_id)
 {
     struct xsk_xdp_hints *hint = NULL;
 
-    /* Search for the PMD to initialize */
+    /* Search for the xdp hints struct*/
     TAILQ_FOREACH (hint, &xdp_hints_structs_list, next) {
         if (btf_id == hint->btf_id)
             break;
@@ -65,14 +66,9 @@ xdp_hints_register(struct xsk_xdp_hints *hints)
     }
 
     hints->btf_id = type_id;
-    CNE_INFO("REGISTERING XDP_HINT %s, with BTF_ID %lu\n", hints->symbol_name, hints->btf_id);
+
+    CNE_DEBUG("REGISTERING XDP_HINT %s, with BTF_ID %lu\n", hints->symbol_name, hints->btf_id);
     TAILQ_INSERT_TAIL(&xdp_hints_structs_list, hints, next);
-
-    struct xsk_xdp_hints *tmp = NULL;
-
-    TAILQ_FOREACH (tmp, &xdp_hints_structs_list, next) {
-        CNE_INFO("tmp btf id %lu", tmp->btf_id);
-    }
 
 out:
     btf__free(module_btf);
@@ -97,11 +93,3 @@ struct xsk_xdp_hints xdp_hints_ixgbe = {
 XDP_HINTS_REGISTER(xdp_hints_ixgbe);
 
 CNE_INIT_PRIO(xskhints_constructor, START) { TAILQ_INIT(&xdp_hints_structs_list); }
-// void process_xdp_hints_ixgbe_timestamp(void *buf){
-// 	pktmbuf_t *p = (pktmbuf_t *) buf;
-// 	struct xdp_hints_ixgbe_timestamp *hints = NULL;
-// 	hints = pktmbuf_mtod_offset(p, struct xdp_hints_ixgbe_timestamp *, -(sizeof(struct
-// xdp_hints_ixgbe_timestamp)));
-// }
-
-// XDP_HINTS_REGISTER(xdp_hints_ixgbe_timestamp);
