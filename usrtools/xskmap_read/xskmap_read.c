@@ -1,8 +1,3 @@
-/* SPDX-License-Identifier: BSD-3-Clause
- * Copyright (c) 2022 Red Hat, Inc.
- * Copyright (c) 2022-2023 Intel Corporation.
- */
-
 #include <stdio.h>
 #include <getopt.h>
 #include <bsd/string.h>
@@ -22,13 +17,17 @@
 #include <cne_stdio.h>
 #include <cne_log.h>
 
-#define OPT_NO_COLOR     "no-color"
-#define OPT_NO_COLOR_NUM 256
+int
+main(int argc __cne_unused, char **argv __cne_unused)
+{
+    int fd;
+    const char *file = "/tmp/map/xsk_map";
 
-struct map_info {
-    char map_path[1024];
-    uds_info_t *uds_info;
-    volatile int timer_quit;
-};
+    fd = bpf_obj_get(file);
+    if (fd < 0)
+        printf("Couldn't get fd %s\n", strerror(errno));
+    else
+        printf("bpf: get fd:%d\n", fd);
 
-struct map_info info;
+    return 0;
+}

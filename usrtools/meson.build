@@ -6,6 +6,7 @@ dirs = [
     'txgen',
     'jsonc2json',
 	'xskmap_load_send',
+	'xskmap_read',
 ]
 
 foreach d:dirs

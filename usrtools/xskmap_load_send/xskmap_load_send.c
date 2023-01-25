@@ -173,23 +173,100 @@ __on_exit(int val, void *arg, int exit_type)
     fflush(stdout);
 }
 
+static int
+do_attach(int idx, int prog_fd, const char *name)
+{
+    int err;
+    int xdp_flags = XDP_FLAGS_DRV_MODE | XDP_FLAGS_UPDATE_IF_NOEXIST;
+
+    err = bpf_xdp_attach(idx, prog_fd, xdp_flags, NULL);
+    if (err < 0) {
+        printf("ERROR: failed to attach program to %s\n", name);
+        return err;
+    }
+
+    return err;
+}
+
 int
 main(int argc, char **argv)
 {
     int signals[] = {SIGINT, SIGUSR1, SIGTERM};
-    int ret       = 0;
+    int ret       = 0, err;
     const uds_group_t *grp;
     int fd;
+    char filename[]          = "xdp_prog_kern.o";
+    const char *prog_name    = "xdp_filter";
+    struct bpf_program *prog = NULL;
+    struct bpf_program *pos;
+    const char *sec_name;
+    int prog_fd = -1, map_fd = -1;
+    struct bpf_object *obj;
 
     if (cne_init() || parse_args(argc, argv))
         return -1;
 
     cne_on_exit(__on_exit, (void *)&info, signals, cne_countof(signals));
 
+    // snprintf(filename, sizeof(filename), "%s_kern.o", argv[0]);
+
+    if (access(filename, O_RDONLY) < 0) {
+        printf("error accessing file %s: %s\n", filename, strerror(errno));
+        return 1;
+    }
+
+    obj = bpf_object__open_file(filename, NULL);
+    if (libbpf_get_error(obj))
+        return 1;
+
+    prog = bpf_object__next_program(obj, NULL);
+    bpf_program__set_type(prog, BPF_PROG_TYPE_XDP);
+
+    err = bpf_object__load(obj);
+    if (err) {
+        printf("Does kernel support devmap lookup?\n");
+        /* If not, the error message will be:
+         *  "cannot pass map_type 14 into func bpf_map_lookup_elem#1"
+         */
+        return 1;
+    }
+
+    bpf_object__for_each_program(pos, obj)
+    {
+        sec_name = bpf_program__section_name(pos);
+        if (sec_name && !strcmp(sec_name, prog_name)) {
+            prog = pos;
+            break;
+        }
+    }
+    prog_fd = bpf_program__fd(prog);
+    if (prog_fd < 0) {
+        printf("program not found: %s\n", strerror(prog_fd));
+        return 1;
+    }
+    printf("bpf: prog_fd:%d\n", prog_fd);
+    fd = map_fd = bpf_map__fd(bpf_object__find_map_by_name(obj, "xsks_map"));
+    if (map_fd < 0) {
+        printf("map not found: %s\n", strerror(map_fd));
+        return 1;
+    }
+    printf("bpf: map_fd:%d\n", map_fd);
+
+    err = bpf_obj_pin(map_fd, "/tmp/map/xsk_map");
+    if (err) {
+        printf("FAILED TO PIN THE XSK MAP error %s\n", strerror(errno));
+        return 1;
+    }
+
+    err = do_attach(if_nametoindex("eno1"), prog_fd, "eno1");
+    if (err)
+        return 1;
+
+#if 0
     fd = bpf_obj_get(info.map_path);
     if (fd < 0)
         CNE_ERR_RET("Failed to open pinned xsk_map:%s err:%s\n", info.map_path, strerror(errno));
-
+#endif
     CNE_DEBUG("xsk_map fd =%d\n", fd);
 
     info.uds_info = uds_get_default(&info);
