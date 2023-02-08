@@ -53,7 +53,12 @@ parse_args(int argc, char **argv)
             }
             break;
         case 'm':
+            memset(info.map_path, 0, sizeof(info.map_path));
             strlcpy(info.map_path, optarg, sizeof(info.map_path));
+            break;
+        case 'd':
+            memset(info.dev, 0, sizeof(info.dev));
+            strlcpy(info.dev, optarg, sizeof(info.dev));
             break;
         case OPT_NO_COLOR_NUM:
             tty_disable_color();
@@ -202,6 +207,11 @@ main(int argc, char **argv)
     const char *sec_name;
     int prog_fd = -1, map_fd = -1;
     struct bpf_object *obj;
+    const char *file = "/tmp/map/xsk_map";
+    const char *dev  = "eno1";
+
+    strlcpy(info.map_path, file, sizeof(info.map_path));
+    strlcpy(info.dev, dev, sizeof(info.dev));
 
     if (cne_init() || parse_args(argc, argv))
         return -1;
@@ -252,13 +262,13 @@ main(int argc, char **argv)
     }
     printf("bpf: map_fd:%d\n", map_fd);
 
-    err = bpf_obj_pin(map_fd, "/tmp/map/xsk_map");
+    err = bpf_obj_pin(map_fd, info.map_path);
     if (err) {
         printf("FAILED TO PIN THE XSK MAP error %s\n", strerror(errno));
         return 1;
     }
 
-    err = do_attach(if_nametoindex("eno1"), prog_fd, "eno1");
+    err = do_attach(if_nametoindex(info.dev), prog_fd, info.dev);
     if (err)
         return 1;
 

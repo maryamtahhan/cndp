@@ -18,7 +18,6 @@
 #include <bpf/xsk.h>
 #endif
 #include <cne.h>
-#include <uds.h>
 #include <cne_stdio.h>
 #include <cne_log.h>
 
@@ -27,9 +26,6 @@
 
 struct map_info {
     char map_path[1024];
-    char dev[64];
-    uds_info_t *uds_info;
-    volatile int timer_quit;
 };
 
 struct map_info info;
