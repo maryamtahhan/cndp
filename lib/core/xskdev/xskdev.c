@@ -592,6 +592,7 @@ err:
     return NULL;
 }
 
+#if 0
 static int
 xskdev_recv_xsk_fd(xskdev_info_t *xi)
 {
@@ -630,7 +631,7 @@ xskdev_recv_xsk_fd(xskdev_info_t *xi)
 
     CNE_ERR_RET("Failed to receive fd\n");
 }
-
+#endif
 static __cne_always_inline int
 xskdev_buf_alloc_default(void *arg, void **bufs, uint16_t nb_bufs)
 {
@@ -743,11 +744,15 @@ xskdev_socket_create(struct lport_cfg *c)
          * We will need (to wait) a flag or re checking of the value of the FD (latter preferred) to
          * indicate we have completed reception before moving onto the socket create stage
          */
+#if 0
         xi->uds_info = (uds_info_t *)c->xsk_uds;
 
         ret = xskdev_recv_xsk_fd(xi);
         if (ret < 0)
             CNE_ERR_GOTO(err, "Failed to receive xsk map fd\n");
+#endif
+        cne_printf("SETTING THE XSK_MAP_FD\n");
+        xi->xsk_map_fd = c->xsk_map_fd;
     }
 
     if (xskdev_use_tx_lock) {

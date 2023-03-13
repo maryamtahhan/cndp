@@ -85,7 +85,8 @@ typedef struct lport_cfg {
     size_t umem_size;              /**< Size of the umem region */
     pktmbuf_info_t *pi;            /**< pktmbuf_info_t structure pointer */
     void *xsk_uds;                 /**< The UDS to connect to get xsk FDs */
-    lport_buf_mgmt_t buf_mgmt;     /**< Buffer management functions */
+    int xsk_map_fd;
+    lport_buf_mgmt_t buf_mgmt; /**< Buffer management functions */
 } lport_cfg_t;
 
 /**< lport_cfg.flags configuration bits */

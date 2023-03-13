@@ -22,6 +22,8 @@
 #include <cne_thread.h>          // for thread_create
 #include <cne_strings.h>
 
+#include <bpf/bpf.h>
+
 #include "main.h"        // for fwd_info, fwd, app_options, get_app_mode
 
 static int
@@ -72,9 +74,16 @@ process_callback(jcfg_info_t *j __cne_unused, void *_obj, void *arg, int idx)
             }
         } else if (!strncmp(obj.opt->name, UDS_PATH_TAG, nlen)) {
             if (obj.opt->val.type == STRING_OPT_TYPE) {
+                f->xsk_map_fd = bpf_obj_get(obj.opt->val.str);
+                if (f->xsk_map_fd < 0)
+                    CNE_ERR_RET("Couldn't get fd %s\n", strerror(errno));
+                else
+                    cne_printf("f->xsk_map_fd:%d\n", f->xsk_map_fd);
+#if 0
                 f->xdp_uds = udsc_handshake(obj.opt->val.str);
                 if (f->xdp_uds == NULL)
                     CNE_ERR_RET("UDS handshake failed\n");
+#endif
             }
         } else if (!strncmp(obj.opt->name, FIB_RULES_TAG, nlen)) {
             if (obj.opt->val.type == ARRAY_OPT_TYPE) {
@@ -197,7 +206,9 @@ process_callback(jcfg_info_t *j __cne_unused, void *_obj, void *arg, int idx)
             pcfg.pi = umem->rinfo[lport->region_idx].pool;
 
             if (lport->flags & LPORT_UNPRIVILEGED) {
-                if (f->xdp_uds)
+                if (f->xsk_map_fd)
+                    pcfg.xsk_map_fd = f->xsk_map_fd;
+                else if (f->xdp_uds)
                     pcfg.xsk_uds = f->xdp_uds;
                 else
                     CNE_ERR_RET("UDS info struct is null\n");
