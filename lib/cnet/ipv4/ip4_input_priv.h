@@ -25,9 +25,10 @@ extern "C" {
  */
 enum cne_node_ip4_input_next {
     CNE_NODE_IP4_INPUT_NEXT_PKT_DROP, /**< Packet drop node. */
-    CNE_NODE_IP4_INPUT_NEXT_FORWARD,  /**< Forward node. */
-    CNE_NODE_IP4_INPUT_NEXT_PROTO,    /**< Protocol node. */
-    CNE_NODE_IP4_INPUT_NEXT_MAX,      /**< Number of next nodes of lookup node. */
+    CNE_NODE_IP4_INPUT_NEXT_PKT_PUNT,
+    CNE_NODE_IP4_INPUT_NEXT_FORWARD, /**< Forward node. */
+    CNE_NODE_IP4_INPUT_NEXT_PROTO,   /**< Protocol node. */
+    CNE_NODE_IP4_INPUT_NEXT_MAX,     /**< Number of next nodes of lookup node. */
 };
 
 #ifdef __cplusplus

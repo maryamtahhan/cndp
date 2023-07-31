@@ -25,6 +25,9 @@
 
 /* Next node for each ptype, default is '0' is "pkt_drop" */
 static const uint8_t p_nxt[_PTYPE_MASK + 1] __cne_cache_aligned = {
+    [CNE_PTYPE_L2_ETHER_ARP]                                 = PTYPE_NEXT_FRAME_PUNT,
+    [_L2_L3_IPV4]                                            = PTYPE_NEXT_IP4_INPUT,
+    [_L2_L3_IPV4_EXT]                                        = PTYPE_NEXT_PKT_PUNT,
     [_L2_L3_IPV4 | CNE_PTYPE_L4_UDP]                         = PTYPE_NEXT_IP4_INPUT,
     [_L2_L3_IPV4 | CNE_PTYPE_L4_TCP]                         = PTYPE_NEXT_IP4_INPUT,
     [_L2_L3_IPV4_EXT | CNE_PTYPE_L4_UDP]                     = PTYPE_NEXT_IP4_INPUT,
@@ -164,6 +167,13 @@ ptype_node_process(struct cne_graph *graph, struct cne_node *node, void **objs, 
         n_left_from -= 1;
 
         l0 = mbuf0->packet_type & ptype_mask;
+        CNE_WARN("l0 = %x   p_nxt[l0]=%d\n", l0, p_nxt[l0]);
+        // CNE_WARN("_L2_L3_IPV4_EXT_UNK = %x\n\n",_L2_L3_IPV4_EXT_UNK);
+        // CNE_WARN("CNE_PTYPE_L3_IPV6|CNE_PTYPE_L2_ETHER|CNE_PTYPE_L4_UDP =
+        // %x",(CNE_PTYPE_L3_IPV6|CNE_PTYPE_L2_ETHER|CNE_PTYPE_L4_UDP));
+        // CNE_WARN("CNE_PTYPE_L3_IPV4|CNE_PTYPE_L2_ETHER|CNE_PTYPE_L4_UDP =
+        // %x\n\n",(CNE_PTYPE_L3_IPV4|CNE_PTYPE_L2_ETHER|CNE_PTYPE_L4_UDP));
+
         if (unlikely((l0 != last_type) && (p_nxt[l0] != next_index))) {
             /* Copy things successfully speculated till now */
             memcpy(to_next, from, last_spec * sizeof(from[0]));
@@ -191,6 +201,7 @@ ptype_node_process(struct cne_graph *graph, struct cne_node *node, void **objs, 
     cne_node_next_stream_put(graph, node, next_index, held);
 
     ctx->last_type = last_type;
+
     return nb_objs;
 }
 
@@ -204,6 +215,8 @@ struct cne_node_register ptype_node = {
         {
             /* Pkt drop node starts at '0' */
             [PTYPE_NEXT_PKT_DROP]   = PKT_DROP_NODE_NAME,
+            [PTYPE_NEXT_PKT_PUNT]   = PUNT_KERNEL_NODE_NAME,
+            [PTYPE_NEXT_FRAME_PUNT] = PUNT_ETHER_NODE_NAME,
             [PTYPE_NEXT_IP4_INPUT]  = IP4_INPUT_NODE_NAME,
             [PTYPE_NEXT_GTPU_INPUT] = GTPU_INPUT_NODE_NAME,
         },

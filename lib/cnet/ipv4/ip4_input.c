@@ -63,6 +63,8 @@ ip4_input_node_process(struct cne_graph *graph, struct cne_node *node, void **ob
     uint64_t dst[4] = {0};
     uint32_t dip[4] = {0};
 
+    CNE_WARN("%s\n", __FUNCTION__);
+
     /* Speculative next */
     next_index = CNE_NODE_IP4_INPUT_NEXT_FORWARD;
 
@@ -103,7 +105,7 @@ ip4_input_node_process(struct cne_graph *graph, struct cne_node *node, void **ob
         pkts += 4;
         n_left_from -= 4;
 
-        next0 = next1 = next2 = next3 = CNE_NODE_IP4_INPUT_NEXT_PKT_DROP;
+        next0 = next1 = next2 = next3 = CNE_NODE_IP4_INPUT_NEXT_PKT_PUNT;
 
         dip[0] = dip[1] = dip[2] = dip[3] = 0;
 
@@ -146,11 +148,16 @@ ip4_input_node_process(struct cne_graph *graph, struct cne_node *node, void **ob
 
         /* Perform FIB lookup to get NH and next node */
         if (likely(fib_info_lookup_index(fi, dip, dst, 4) > 0)) {
+            CNE_WARN("%s FIB LOOKUP\n", __FUNCTION__);
             /* Extract next node id and NH */
-            next0 = (dst[0] >> RT4_NEXT_INDEX_SHIFT);
-            next1 = (dst[1] >> RT4_NEXT_INDEX_SHIFT);
-            next2 = (dst[2] >> RT4_NEXT_INDEX_SHIFT);
-            next3 = (dst[3] >> RT4_NEXT_INDEX_SHIFT);
+            next0 = !((dst[0] >> RT4_NEXT_INDEX_SHIFT)) ? (dst[0] >> RT4_NEXT_INDEX_SHIFT)
+                                                        : CNE_NODE_IP4_INPUT_NEXT_PKT_PUNT;
+            next0 = !((dst[1] >> RT4_NEXT_INDEX_SHIFT)) ? (dst[1] >> RT4_NEXT_INDEX_SHIFT)
+                                                        : CNE_NODE_IP4_INPUT_NEXT_PKT_PUNT;
+            next0 = !((dst[2] >> RT4_NEXT_INDEX_SHIFT)) ? (dst[2] >> RT4_NEXT_INDEX_SHIFT)
+                                                        : CNE_NODE_IP4_INPUT_NEXT_PKT_PUNT;
+            next0 = !((dst[3] >> RT4_NEXT_INDEX_SHIFT)) ? (dst[3] >> RT4_NEXT_INDEX_SHIFT)
+                                                        : CNE_NODE_IP4_INPUT_NEXT_PKT_PUNT;
         }
 
         /* Enqueue four to next node */
@@ -158,6 +165,7 @@ ip4_input_node_process(struct cne_graph *graph, struct cne_node *node, void **ob
                               (next_index ^ next3);
 
         if (unlikely(fix_spec)) {
+            CNE_WARN("%s fix_spec\n", __FUNCTION__);
             /* Copy things successfully speculated till now */
             memcpy(to_next, from, last_spec * sizeof(from[0]));
             from += last_spec;
@@ -227,8 +235,20 @@ ip4_input_node_process(struct cne_graph *graph, struct cne_node *node, void **ob
 
         ipv4_save_metadata(mbuf0, ip4[0]);
 
-        if (likely(fib_info_lookup_index(fi, dip, dst, 1) > 0))
-            next0 = (dst[0] >> RT4_NEXT_INDEX_SHIFT); /* Extract next node id and NH */
+        if (likely(fib_info_lookup_index(fi, dip, dst, 1) > 0)) {
+            CNE_WARN("%s FIB LOOKUP ONE\n", __FUNCTION__);
+            if (CNE_IS_IPV4_MCAST(*dip)) {
+                CNE_WARN("%s Multicast packet\n", __FUNCTION__);
+                next0 =
+                    CNE_NODE_IP4_INPUT_NEXT_PKT_PUNT;        // PUNT multicast packet to the kernel
+                                                             // //TODO change in 4 loop above
+            } else
+                next0 = (dst[0] >> RT4_NEXT_INDEX_SHIFT);        // Extract next node id and NH
+
+            // next0  = (dst[0] >> RT4_NEXT_INDEX_SHIFT);//!((dst[0] >> RT4_NEXT_INDEX_SHIFT))?
+            // (dst[0] >> RT4_NEXT_INDEX_SHIFT): CNE_NODE_IP4_INPUT_NEXT_PKT_PUNT;
+            CNE_WARN("%s next=%d\n", __FUNCTION__, next0);
+        }
 
         if (unlikely(next_index ^ next0)) {
             /* Copy things successfully speculated till now */
@@ -279,6 +299,7 @@ static struct cne_node_register ip4_input_node = {
     .next_nodes =
         {
             [CNE_NODE_IP4_INPUT_NEXT_PKT_DROP] = PKT_DROP_NODE_NAME,
+            [CNE_NODE_IP4_INPUT_NEXT_PKT_PUNT] = PUNT_KERNEL_NODE_NAME,
             [CNE_NODE_IP4_INPUT_NEXT_FORWARD]  = IP4_FORWARD_NODE_NAME,
             [CNE_NODE_IP4_INPUT_NEXT_PROTO]    = IP4_PROTO_NODE_NAME,
         },

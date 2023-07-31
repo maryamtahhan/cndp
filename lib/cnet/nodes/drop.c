@@ -19,6 +19,8 @@ pkt_drop_process(struct cne_graph *graph, struct cne_node *node, void **objs, ui
     CNE_SET_USED(node);
     CNE_SET_USED(graph);
 
+    CNE_WARN("%s\n", __FUNCTION__);
+
     pktmbuf_free_bulk((pktmbuf_t **)objs, nb_objs);
 
     return nb_objs;

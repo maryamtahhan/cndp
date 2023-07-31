@@ -38,6 +38,8 @@ arp_request_process_mbuf(struct cne_node *node, pktmbuf_t *mbuf)
 {
     arp_request_node_ctx_t *ctx = (arp_request_node_ctx_t *)node->ctx;
 
+    CNE_WARN("%s\n", __FUNCTION__);
+
     if (ctx->s >= 0) {
         struct cne_ipv4_hdr *ip4;
         char *buf;
@@ -71,6 +73,7 @@ arp_request_node_process(struct cne_graph *graph, struct cne_node *node, void **
     pktmbuf_t *mbuf0, *mbuf1, *mbuf2, *mbuf3, **pkts;
     int k;
 
+    CNE_WARN("%s\n", __FUNCTION__);
     /* Speculative next */
     next_index = ARP_REQUEST_NEXT_PKT_DROP;
 

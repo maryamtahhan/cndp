@@ -14,7 +14,6 @@ extern "C" {
 struct punt_kernel_node_elem;
 struct punt_kernel_node_ctx;
 typedef struct punt_kernel_node_elem punt_kernel_node_elem_t;
-
 /**
  * @internal
  *
@@ -33,11 +32,6 @@ struct punt_kernel_node_elem {
     struct punt_kernel_node_elem *next; /**< Pointer to the next node element. */
     struct punt_kernel_node_ctx *ctx;   /**< node context. */
     cne_node_t nid;                     /**< Node identifier of the PUNT Kernel node. */
-};
-
-enum punt_kernel_next_nodes {
-    PUNT_KERNEL_NEXT_PKT_DROP,
-    PUNT_KERNEL_NEXT_MAX,
 };
 
 /**

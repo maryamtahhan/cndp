@@ -17,6 +17,8 @@ struct ptype_node_ctx {
 
 enum ptype_next_nodes {
     PTYPE_NEXT_PKT_DROP,
+    PTYPE_NEXT_PKT_PUNT,
+    PTYPE_NEXT_FRAME_PUNT,
     PTYPE_NEXT_IP4_INPUT,
     PTYPE_NEXT_GTPU_INPUT,
     PTYPE_NEXT_MAX,

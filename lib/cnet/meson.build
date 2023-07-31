@@ -14,7 +14,6 @@ def_deps = [
     pktdev,
     pktmbuf,
     fib,
-
     ring,
     cli,
     hash,
@@ -25,6 +24,9 @@ def_deps = [
     graph,
     jcfg,
     tun,
+    uds,
+    pmd_tap,
+    xskdev,
     ]
 
 dirs = [ # list is not sorted and must be in this order.
